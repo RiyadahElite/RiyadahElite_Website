@@ -2,26 +2,14 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/api';
 import toast from 'react-hot-toast';
+import { User, AuthState, LoginCredentials, RegisterCredentials } from '../types/auth';
 
-// Define User type
-type User = {
-  id: number;
-  name: string;
-  email: string;
-  created_at: string;
-  role?: 'user' | 'admin';
-};
-
-type AuthContextType = {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+interface AuthContextType extends AuthState {
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
-};
+}
 
-// Create context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
@@ -32,70 +20,85 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+  });
   const navigate = useNavigate();
 
-  // Check for existing session on initial load
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
           const userData = await auth.getProfile();
-          setUser(userData);
+          setState({
+            user: userData,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        } else {
+          setState(prev => ({ ...prev, isLoading: false }));
         }
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('token');
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
         toast.error('Session expired. Please login again.');
-      } finally {
-        setIsLoading(false);
       }
     };
 
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
+  const login = async ({ email, password }: LoginCredentials) => {
+    setState(prev => ({ ...prev, isLoading: true }));
     try {
-      const { token } = await auth.login(email, password);
+      const { token, user } = await auth.login(email, password);
       localStorage.setItem('token', token);
-      const userData = await auth.getProfile();
-      setUser(userData);
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Login failed:', error);
-      toast.error('Invalid email or password');
+      setState(prev => ({ ...prev, isLoading: false }));
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
+  const register = async ({ name, email, password }: RegisterCredentials) => {
+    setState(prev => ({ ...prev, isLoading: true }));
     try {
-      const { token } = await auth.register(name, email, password);
+      const { token, user } = await auth.register(name, email, password);
       localStorage.setItem('token', token);
-      const userData = await auth.getProfile();
-      setUser(userData);
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Registration failed:', error);
-      toast.error('Registration failed. Please try again.');
+      setState(prev => ({ ...prev, isLoading: false }));
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = () => {
-    setUser(null);
     localStorage.removeItem('token');
+    setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
     toast.success('Logged out successfully');
     navigate('/');
   };
@@ -103,9 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
+        ...state,
         login,
         register,
         logout,
@@ -116,5 +117,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook for using auth context
 export const useAuth = () => useContext(AuthContext);
