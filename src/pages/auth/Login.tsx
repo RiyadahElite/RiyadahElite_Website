@@ -38,7 +38,7 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await login({ email, password });
 
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
