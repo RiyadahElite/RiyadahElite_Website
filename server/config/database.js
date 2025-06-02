@@ -17,7 +17,7 @@ if (!fs.existsSync(dataDir)) {
 let db;
 
 // Helper function to run SQL queries with proper error handling
-const runQuery = (sql, params = []) => {
+export const runQuery = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     try {
       db.run(sql, params, function(err) {
@@ -31,7 +31,7 @@ const runQuery = (sql, params = []) => {
 };
 
 // Helper function to get single row with error handling
-const getOne = (sql, params = []) => {
+export const getOne = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     try {
       db.get(sql, params, (err, row) => {
@@ -45,7 +45,7 @@ const getOne = (sql, params = []) => {
 };
 
 // Helper function to get multiple rows with error handling
-const getAll = (sql, params = []) => {
+export const getAll = (sql, params = []) => {
   return new Promise((resolve, reject) => {
     try {
       db.all(sql, params, (err, rows) => {
@@ -99,6 +99,36 @@ export async function initializeDatabase() {
       )
     `);
 
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS tournaments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        date TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        points_required INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS claims (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        reward_id INTEGER NOT NULL,
+        claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (reward_id) REFERENCES rewards (id)
+      )
+    `);
+
     // Create admin user if not exists
     const adminEmail = 'admin@gmail.com';
     const admin = await getOne('SELECT * FROM users WHERE email = ?', [adminEmail]);
@@ -136,16 +166,52 @@ export function getDatabase() {
   return db;
 }
 
-// Export all functions
-export {
-  getOne,
-  getAll,
-  runQuery,
-  createUser,
-  getUserByEmail,
-  getUserById,
-  getAllTournaments,
-  createTournament,
-  getAllRewards,
-  claimReward
-};
+// User-related functions
+export async function createUser({ name, email, passwordHash }) {
+  const result = await runQuery(`
+    INSERT INTO users (name, email, password_hash)
+    VALUES (?, ?, ?)
+  `, [name, email, passwordHash]);
+
+  await runQuery(
+    'INSERT INTO user_points (user_id) VALUES (?)',
+    [result.lastID]
+  );
+
+  return result;
+}
+
+export async function getUserByEmail(email) {
+  return await getOne('SELECT * FROM users WHERE email = ?', [email]);
+}
+
+export async function getUserById(id) {
+  return await getOne(
+    'SELECT id, name, email, role, created_at FROM users WHERE id = ?',
+    [id]
+  );
+}
+
+// Tournament-related functions
+export async function getAllTournaments() {
+  return await getAll('SELECT * FROM tournaments ORDER BY date DESC');
+}
+
+export async function createTournament({ title, description, date }) {
+  return await runQuery(`
+    INSERT INTO tournaments (title, description, date)
+    VALUES (?, ?, ?)
+  `, [title, description, date]);
+}
+
+// Reward-related functions
+export async function getAllRewards() {
+  return await getAll('SELECT * FROM rewards');
+}
+
+export async function claimReward(userId, rewardId) {
+  return await runQuery(`
+    INSERT INTO claims (user_id, reward_id)
+    VALUES (?, ?)
+  `, [userId, rewardId]);
+}
