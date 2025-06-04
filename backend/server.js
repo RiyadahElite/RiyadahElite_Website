@@ -14,13 +14,28 @@ import { errorHandler } from './middleware/errorHandler.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// CORS configuration
+const corsOptions = {
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
-app.use(helmet());
+app.use(cors(corsOptions));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(compression());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -30,6 +45,6 @@ app.use('/api/rewards', rewardRoutes);
 // Error handling
 app.use(errorHandler);
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
