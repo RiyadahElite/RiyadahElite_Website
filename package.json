@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "nodemon backend/server.js"
+    "server": "nodemon backend/server.js",
+    "server:prod": "node backend/server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.7",
