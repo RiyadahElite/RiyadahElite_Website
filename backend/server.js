@@ -32,12 +32,21 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Backend is running',
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tournaments', tournamentRoutes);
 app.use('/api/rewards', rewardRoutes);

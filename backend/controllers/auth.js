@@ -28,7 +28,7 @@ export const register = async (req, res, next) => {
 
     // Create user
     const result = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, role',
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, role, points, created_at',
       [name, email, hashedPassword]
     );
 
@@ -37,8 +37,8 @@ export const register = async (req, res, next) => {
     // Generate JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
     res.status(201).json({
@@ -47,10 +47,13 @@ export const register = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        points: user.points,
+        created_at: user.created_at
       }
     });
   } catch (error) {
+    console.error('Registration error:', error);
     next(error);
   }
 };
@@ -85,8 +88,8 @@ export const login = async (req, res, next) => {
     // Generate JWT
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      process.env.JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
     res.json({
@@ -95,10 +98,13 @@ export const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        points: user.points,
+        created_at: user.created_at
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     next(error);
   }
 };
@@ -106,7 +112,7 @@ export const login = async (req, res, next) => {
 export const getProfile = async (req, res, next) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, role FROM users WHERE id = $1',
+      'SELECT id, name, email, role, points, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
 
@@ -116,6 +122,7 @@ export const getProfile = async (req, res, next) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Get profile error:', error);
     next(error);
   }
 };

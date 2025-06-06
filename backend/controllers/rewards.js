@@ -8,6 +8,7 @@ export const getAllRewards = async (req, res, next) => {
     );
     res.json(result.rows);
   } catch (error) {
+    console.error('Get rewards error:', error);
     next(error);
   }
 };
@@ -25,6 +26,7 @@ export const getRewardById = async (req, res, next) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Get reward error:', error);
     next(error);
   }
 };
@@ -45,6 +47,7 @@ export const createReward = async (req, res, next) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error('Create reward error:', error);
     next(error);
   }
 };
@@ -70,6 +73,7 @@ export const updateReward = async (req, res, next) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Update reward error:', error);
     next(error);
   }
 };
@@ -87,6 +91,7 @@ export const deleteReward = async (req, res, next) => {
 
     res.json({ message: 'Reward deleted successfully' });
   } catch (error) {
+    console.error('Delete reward error:', error);
     next(error);
   }
 };
@@ -103,6 +108,11 @@ export const claimReward = async (req, res, next) => {
         'SELECT points FROM users WHERE id = $1',
         [req.user.id]
       );
+
+      if (userPoints.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'User not found' });
+      }
 
       // Get reward details
       const reward = await client.query(
@@ -141,6 +151,7 @@ export const claimReward = async (req, res, next) => {
       client.release();
     }
   } catch (error) {
+    console.error('Claim reward error:', error);
     next(error);
   }
 };

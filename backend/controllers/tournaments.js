@@ -8,6 +8,7 @@ export const getAllTournaments = async (req, res, next) => {
     );
     res.json(result.rows);
   } catch (error) {
+    console.error('Get tournaments error:', error);
     next(error);
   }
 };
@@ -25,6 +26,7 @@ export const getTournamentById = async (req, res, next) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Get tournament error:', error);
     next(error);
   }
 };
@@ -45,6 +47,7 @@ export const createTournament = async (req, res, next) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
+    console.error('Create tournament error:', error);
     next(error);
   }
 };
@@ -72,6 +75,7 @@ export const updateTournament = async (req, res, next) => {
 
     res.json(result.rows[0]);
   } catch (error) {
+    console.error('Update tournament error:', error);
     next(error);
   }
 };
@@ -89,6 +93,7 @@ export const deleteTournament = async (req, res, next) => {
 
     res.json({ message: 'Tournament deleted successfully' });
   } catch (error) {
+    console.error('Delete tournament error:', error);
     next(error);
   }
 };
