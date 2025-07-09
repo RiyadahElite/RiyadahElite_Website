@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -41,18 +41,23 @@ api.interceptors.response.use(
 );
 
 export const auth = {
-  register: async (name: string, email: string, password: string) => {
-    const response = await api.post('/register', { name, email, password });
+  register: async (username: string, email: string, password: string) => {
+    const response = await api.post('/auth/register', { username, email, password });
     return response.data;
   },
 
   login: async (email: string, password: string) => {
-    const response = await api.post('/login', { email, password });
+    const response = await api.post('/auth/login', { email, password });
     return response.data;
   },
 
   getProfile: async () => {
-    const response = await api.get('/profile');
+    const response = await api.get('/auth/profile');
+    return response.data;
+  },
+
+  updateProfile: async (data: { username?: string; avatar?: string }) => {
+    const response = await api.put('/auth/profile', data);
     return response.data;
   },
 };
@@ -63,8 +68,36 @@ export const tournaments = {
     return response.data;
   },
 
-  create: async (data: { title: string; description: string; date: string }) => {
+  getById: async (id: string) => {
+    const response = await api.get(`/tournaments/${id}`);
+    return response.data;
+  },
+
+  create: async (data: { 
+    title: string; 
+    game_name: string;
+    description: string; 
+    start_date: string;
+    end_date: string;
+    prize_pool?: string;
+    max_participants?: number;
+  }) => {
     const response = await api.post('/tournaments', data);
+    return response.data;
+  },
+
+  join: async (tournamentId: string) => {
+    const response = await api.post(`/tournaments/${tournamentId}/join`);
+    return response.data;
+  },
+
+  leave: async (tournamentId: string) => {
+    const response = await api.delete(`/tournaments/${tournamentId}/leave`);
+    return response.data;
+  },
+
+  getUserTournaments: async () => {
+    const response = await api.get('/tournaments/user');
     return response.data;
   },
 };
@@ -75,8 +108,36 @@ export const rewards = {
     return response.data;
   },
 
-  claim: async (rewardId: number) => {
+  claim: async (rewardId: string) => {
     const response = await api.post('/rewards/claim', { rewardId });
+    return response.data;
+  },
+
+  getUserRewards: async () => {
+    const response = await api.get('/rewards/user');
+    return response.data;
+  },
+};
+
+export const games = {
+  getAll: async () => {
+    const response = await api.get('/games');
+    return response.data;
+  },
+
+  submit: async (data: {
+    title: string;
+    developer: string;
+    genre: string;
+    description?: string;
+    image_url?: string;
+  }) => {
+    const response = await api.post('/games', data);
+    return response.data;
+  },
+
+  updateStatus: async (gameId: string, status: string) => {
+    const response = await api.put(`/games/${gameId}/status`, { status });
     return response.data;
   },
 };

@@ -51,7 +51,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await register(username, email, password);
+      await register({ username, email, password });
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error: any) {
