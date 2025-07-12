@@ -1,5 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs');
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -323,4 +323,4 @@ const db = {
   }
 };
 
-module.exports = { db, supabase };
+export { db, supabase };

@@ -1,6 +1,6 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { db } = require('../config/database');
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { db } from '../config/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'riyadah_elite_fallback_secret';
 
@@ -191,4 +191,4 @@ const authController = {
   }
 };
 
-module.exports = authController;
+export default authController;

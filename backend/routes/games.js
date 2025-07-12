@@ -1,6 +1,6 @@
-const express = require('express');
-const gameController = require('../controllers/gameController');
-const authMiddleware = require('../middleware/auth');
+import express from 'express';
+import gameController from '../controllers/games.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -12,4 +12,4 @@ router.get('/', gameController.getAllGames);
 router.post('/', gameController.submitGame);
 router.put('/:id/status', gameController.updateGameStatus);
 
-module.exports = router;
+export default router;

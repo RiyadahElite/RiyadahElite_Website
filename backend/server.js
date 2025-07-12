@@ -1,18 +1,21 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const compression = require('compression');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import compression from 'compression';
+import dotenv from 'dotenv';
+
+// Configure environment variables
+dotenv.config();
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const tournamentRoutes = require('./routes/tournaments');
-const rewardRoutes = require('./routes/rewards');
-const gameRoutes = require('./routes/games');
+import authRoutes from './routes/auth.js';
+import tournamentRoutes from './routes/tournaments.js';
+import rewardRoutes from './routes/rewards.js';
+import gameRoutes from './routes/games.js';
 
 // Import database
-const { db } = require('./config/database');
+import { db } from './config/database.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -153,4 +156,4 @@ app.listen(PORT, '0.0.0.0', () => {
   }
 });
 
-module.exports = app;
+export default app;
