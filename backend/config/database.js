@@ -1,24 +1,49 @@
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcryptjs');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('Supabase credentials not found. Using placeholder database functions.');
+  console.warn('⚠️  Supabase credentials not found. Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env file');
 }
 
 // Create Supabase client for server-side operations
 const supabase = supabaseUrl && supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey)
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
   : null;
 
 // Database helper functions
 const db = {
+  // Test database connection
+  async testConnection() {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1);
+      
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Database connection test failed:', error);
+      throw error;
+    }
+  },
+
   // Users
   async createUser(userData) {
     if (!supabase) {
-      console.log('Placeholder: Creating user', userData);
-      return { id: 'placeholder-id', ...userData };
+      throw new Error('Database not configured');
     }
     
     const { data, error } = await supabase
@@ -33,8 +58,7 @@ const db = {
 
   async getUserByEmail(email) {
     if (!supabase) {
-      console.log('Placeholder: Getting user by email', email);
-      return null;
+      throw new Error('Database not configured');
     }
     
     const { data, error } = await supabase
@@ -49,8 +73,7 @@ const db = {
 
   async getUserById(id) {
     if (!supabase) {
-      console.log('Placeholder: Getting user by ID', id);
-      return { id, username: 'placeholder', email: 'placeholder@example.com' };
+      throw new Error('Database not configured');
     }
     
     const { data, error } = await supabase
@@ -65,13 +88,12 @@ const db = {
 
   async updateUser(id, updates) {
     if (!supabase) {
-      console.log('Placeholder: Updating user', id, updates);
-      return { id, ...updates };
+      throw new Error('Database not configured');
     }
     
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -80,21 +102,36 @@ const db = {
     return data;
   },
 
+  // Activity logging
+  async logActivity(userId, activityType, description, pointsChange = 0, tournamentId = null, rewardId = null) {
+    if (!supabase) {
+      return null;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_activity')
+        .insert([{
+          user_id: userId,
+          tournament_id: tournamentId,
+          reward_id: rewardId,
+          activity_type: activityType,
+          description,
+          points_change: pointsChange
+        }]);
+      
+      if (error) console.error('Activity logging error:', error);
+      return data;
+    } catch (error) {
+      console.error('Activity logging failed:', error);
+      return null;
+    }
+  },
+
   // Tournaments
   async getTournaments() {
     if (!supabase) {
-      console.log('Placeholder: Getting tournaments');
-      return [
-        {
-          id: '1',
-          title: 'Apex Legends Championship',
-          game_name: 'Apex Legends',
-          start_date: '2025-02-15T18:00:00Z',
-          end_date: '2025-02-15T22:00:00Z',
-          prize_pool: '$10,000',
-          status: 'upcoming'
-        }
-      ];
+      return [];
     }
     
     const { data, error } = await supabase
@@ -106,91 +143,16 @@ const db = {
       .order('start_date', { ascending: true });
     
     if (error) throw error;
-    return data;
-  },
-
-  async getTournamentById(id) {
-    if (!supabase) {
-      console.log('Placeholder: Getting tournament by ID', id);
-      return { id, title: 'Sample Tournament' };
-    }
-    
-    const { data, error } = await supabase
-      .from('tournaments')
-      .select(`
-        *,
-        created_by_user:users!tournaments_created_by_fkey(username),
-        participants:user_participation(
-          id,
-          status,
-          joined_at,
-          user:users(username)
-        )
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  async createTournament(tournamentData) {
-    if (!supabase) {
-      console.log('Placeholder: Creating tournament', tournamentData);
-      return { id: 'placeholder-id', ...tournamentData };
-    }
-    
-    const { data, error } = await supabase
-      .from('tournaments')
-      .insert([tournamentData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // User Participation
-  async joinTournament(userId, tournamentId) {
-    if (!supabase) {
-      console.log('Placeholder: Joining tournament', userId, tournamentId);
-      return { id: 'placeholder-id', user_id: userId, tournament_id: tournamentId };
-    }
-    
-    const { data, error } = await supabase
-      .from('user_participation')
-      .insert([{ user_id: userId, tournament_id: tournamentId }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  async leaveTournament(userId, tournamentId) {
-    if (!supabase) {
-      console.log('Placeholder: Leaving tournament', userId, tournamentId);
-      return true;
-    }
-    
-    const { error } = await supabase
-      .from('user_participation')
-      .delete()
-      .eq('user_id', userId)
-      .eq('tournament_id', tournamentId);
-    
-    if (error) throw error;
-    return true;
+    return data || [];
   },
 
   async getUserTournaments(userId) {
     if (!supabase) {
-      console.log('Placeholder: Getting user tournaments', userId);
       return [];
     }
     
     const { data, error } = await supabase
-      .from('user_participation')
+      .from('user_tournaments')
       .select(`
         *,
         tournament:tournaments(*)
@@ -199,23 +161,32 @@ const db = {
       .order('joined_at', { ascending: false });
     
     if (error) throw error;
+    return data || [];
+  },
+
+  async joinTournament(userId, tournamentId) {
+    if (!supabase) {
+      throw new Error('Database not configured');
+    }
+    
+    const { data, error } = await supabase
+      .from('user_tournaments')
+      .insert([{ user_id: userId, tournament_id: tournamentId }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Log activity
+    await this.logActivity(userId, 'tournament_join', 'Joined tournament', 10, tournamentId);
+    
     return data;
   },
 
   // Rewards
   async getRewards() {
     if (!supabase) {
-      console.log('Placeholder: Getting rewards');
-      return [
-        {
-          id: '1',
-          title: 'Gaming Mouse',
-          description: 'High-precision gaming mouse',
-          points_required: 500,
-          category: 'hardware',
-          stock: 10
-        }
-      ];
+      return [];
     }
     
     const { data, error } = await supabase
@@ -225,66 +196,11 @@ const db = {
       .order('points_required', { ascending: true });
     
     if (error) throw error;
-    return data;
-  },
-
-  async claimReward(userId, rewardId) {
-    if (!supabase) {
-      console.log('Placeholder: Claiming reward', userId, rewardId);
-      return { id: 'placeholder-id', user_id: userId, reward_id: rewardId };
-    }
-    
-    // Start a transaction to check user points and claim reward
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('points')
-      .eq('id', userId)
-      .single();
-    
-    if (userError) throw userError;
-    
-    const { data: reward, error: rewardError } = await supabase
-      .from('rewards')
-      .select('points_required, stock')
-      .eq('id', rewardId)
-      .single();
-    
-    if (rewardError) throw rewardError;
-    
-    if (user.points < reward.points_required) {
-      throw new Error('Insufficient points');
-    }
-    
-    if (reward.stock <= 0) {
-      throw new Error('Reward out of stock');
-    }
-    
-    // Claim the reward
-    const { data, error } = await supabase
-      .from('user_rewards')
-      .insert([{ user_id: userId, reward_id: rewardId }])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Update user points and reward stock
-    await supabase
-      .from('users')
-      .update({ points: user.points - reward.points_required })
-      .eq('id', userId);
-    
-    await supabase
-      .from('rewards')
-      .update({ stock: reward.stock - 1 })
-      .eq('id', rewardId);
-    
-    return data;
+    return data || [];
   },
 
   async getUserRewards(userId) {
     if (!supabase) {
-      console.log('Placeholder: Getting user rewards', userId);
       return [];
     }
     
@@ -298,67 +214,72 @@ const db = {
       .order('redeemed_at', { ascending: false });
     
     if (error) throw error;
+    return data || [];
+  },
+
+  async claimReward(userId, rewardId) {
+    if (!supabase) {
+      throw new Error('Database not configured');
+    }
+    
+    // Get user and reward info
+    const [user, reward] = await Promise.all([
+      this.getUserById(userId),
+      supabase.from('rewards').select('*').eq('id', rewardId).single()
+    ]);
+    
+    if (!user || !reward.data) {
+      throw new Error('User or reward not found');
+    }
+    
+    if (user.points < reward.data.points_required) {
+      throw new Error('Insufficient points');
+    }
+    
+    if (reward.data.stock <= 0) {
+      throw new Error('Reward out of stock');
+    }
+    
+    // Claim reward
+    const { data, error } = await supabase
+      .from('user_rewards')
+      .insert([{ user_id: userId, reward_id: rewardId }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Update user points and reward stock
+    await Promise.all([
+      this.updateUser(userId, { points: user.points - reward.data.points_required }),
+      supabase.from('rewards').update({ stock: reward.data.stock - 1 }).eq('id', rewardId)
+    ]);
+    
+    // Log activity
+    await this.logActivity(userId, 'reward_claim', `Claimed ${reward.data.title}`, -reward.data.points_required, null, rewardId);
+    
     return data;
   },
 
-  // Games
-  async getGames() {
+  // User activity
+  async getUserActivity(userId, limit = 10) {
     if (!supabase) {
-      console.log('Placeholder: Getting games');
-      return [
-        {
-          id: '1',
-          title: 'Sample Game',
-          developer: 'Sample Studio',
-          genre: 'Action',
-          status: 'approved'
-        }
-      ];
+      return [];
     }
     
     const { data, error } = await supabase
-      .from('games')
+      .from('user_activity')
       .select(`
         *,
-        submitted_by_user:users!games_submitted_by_fkey(username)
+        tournament:tournaments(title),
+        reward:rewards(title)
       `)
-      .order('created_at', { ascending: false });
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
     
     if (error) throw error;
-    return data;
-  },
-
-  async createGame(gameData) {
-    if (!supabase) {
-      console.log('Placeholder: Creating game', gameData);
-      return { id: 'placeholder-id', ...gameData };
-    }
-    
-    const { data, error } = await supabase
-      .from('games')
-      .insert([gameData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  async updateGame(id, updates) {
-    if (!supabase) {
-      console.log('Placeholder: Updating game', id, updates);
-      return { id, ...updates };
-    }
-    
-    const { data, error } = await supabase
-      .from('games')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    return data || [];
   }
 };
 

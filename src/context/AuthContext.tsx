@@ -8,6 +8,7 @@ interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: () => {},
+  updateUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -49,7 +51,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAuthenticated: false,
           isLoading: false,
         });
-        toast.error('Session expired. Please login again.');
       }
     };
 
@@ -66,28 +67,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: true,
         isLoading: false,
       });
-      toast.success('Welcome back!');
+      toast.success(`Welcome back, ${user.username}!`);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       setState(prev => ({ ...prev, isLoading: false }));
+      const errorMessage = error.response?.data?.error || 'Login failed';
+      toast.error(errorMessage);
       throw error;
     }
   };
 
-  const register = async ({ name, email, password }: RegisterCredentials) => {
+  const register = async ({ username, email, password }: RegisterCredentials) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      const { token, user } = await auth.register(name, email, password);
+      const { token, user } = await auth.register(username, email, password);
       localStorage.setItem('token', token);
       setState({
         user,
         isAuthenticated: true,
         isLoading: false,
       });
-      toast.success('Account created successfully!');
+      toast.success(`Welcome to Riyadh Elite, ${user.username}!`);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       setState(prev => ({ ...prev, isLoading: false }));
+      const errorMessage = error.response?.data?.error || 'Registration failed';
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -103,6 +108,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     navigate('/');
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setState(prev => ({
+      ...prev,
+      user: prev.user ? { ...prev.user, ...userData } : null,
+    }));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -110,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        updateUser,
       }}
     >
       {children}

@@ -1,32 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { tournaments, rewards } from '../../services/api';
-import { Tournament, Reward } from '../../types/auth';
-import { Trophy, Star, Gamepad2, Users, Calendar, Gift } from 'lucide-react';
+import { auth } from '../../services/api';
+import { DashboardData } from '../../types/auth';
+import { Trophy, Star, Gamepad2, Users, Calendar, Gift, Activity, TrendingUp } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import EmptyState from '../../components/ui/EmptyState';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [userTournaments, setUserTournaments] = useState<Tournament[]>([]);
-  const [userRewards, setUserRewards] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'Dashboard | Riyadah Elite';
+    document.title = 'Dashboard | Riyadh Elite';
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [tournamentsData, rewardsData] = await Promise.all([
-        tournaments.getUserTournaments(),
-        rewards.getUserRewards()
-      ]);
-      
-      setUserTournaments(tournamentsData);
-      setUserRewards(rewardsData);
+      const data = await auth.getDashboardData();
+      setDashboardData(data);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -41,6 +36,21 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen py-32 bg-background">
+        <div className="container mx-auto px-4">
+          <EmptyState 
+            title="Failed to load dashboard"
+            message="Please try refreshing the page"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const { tournaments, rewards, activity, stats } = dashboardData;
 
   return (
     <div className="min-h-screen py-32 bg-background">
@@ -73,7 +83,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-neutral-400 text-sm">Tournaments Joined</p>
-                <p className="text-2xl font-bold text-secondary">{userTournaments.length}</p>
+                <p className="text-2xl font-bold text-secondary">{stats.totalTournaments}</p>
               </div>
               <div className="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center">
                 <Trophy className="h-6 w-6 text-secondary" />
@@ -85,7 +95,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-neutral-400 text-sm">Rewards Claimed</p>
-                <p className="text-2xl font-bold text-accent">{userRewards.length}</p>
+                <p className="text-2xl font-bold text-accent">{stats.totalRewards}</p>
               </div>
               <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center">
                 <Gift className="h-6 w-6 text-accent" />
@@ -96,17 +106,22 @@ const Dashboard = () => {
           <div className="card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-neutral-400 text-sm">Games Tested</p>
-                <p className="text-2xl font-bold text-success">0</p>
+                <p className="text-neutral-400 text-sm">Member Since</p>
+                <p className="text-lg font-bold text-success">
+                  {new Date(user?.created_at || '').toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })}
+                </p>
               </div>
               <div className="w-12 h-12 bg-success/20 rounded-full flex items-center justify-center">
-                <Gamepad2 className="h-6 w-6 text-success" />
+                <Users className="h-6 w-6 text-success" />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Tournaments */}
           <div className="card">
             <div className="flex items-center justify-between mb-6">
@@ -119,25 +134,27 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            {userTournaments.length > 0 ? (
+            {tournaments.length > 0 ? (
               <div className="space-y-4">
-                {userTournaments.slice(0, 3).map((tournament: any) => (
-                  <div key={tournament.id} className="flex items-center justify-between p-4 bg-background rounded-lg border border-neutral-800">
+                {tournaments.slice(0, 3).map((userTournament) => (
+                  <div key={userTournament.id} className="flex items-center justify-between p-4 bg-background rounded-lg border border-neutral-800">
                     <div>
-                      <h3 className="font-semibold text-neutral-200">{tournament.tournament.title}</h3>
-                      <p className="text-sm text-neutral-400">{tournament.tournament.game_name}</p>
+                      <h3 className="font-semibold text-neutral-200">{userTournament.tournament.title}</h3>
+                      <p className="text-sm text-neutral-400">{userTournament.tournament.game}</p>
                       <p className="text-xs text-neutral-500 flex items-center mt-1">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(tournament.tournament.start_date).toLocaleDateString()}
+                        {new Date(userTournament.tournament.start_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        tournament.status === 'registered' 
+                        userTournament.status === 'registered' 
                           ? 'bg-primary/20 text-primary' 
+                          : userTournament.status === 'active'
+                          ? 'bg-warning/20 text-warning'
                           : 'bg-success/20 text-success'
                       }`}>
-                        {tournament.status}
+                        {userTournament.status}
                       </span>
                     </div>
                   </div>
@@ -166,9 +183,9 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            {userRewards.length > 0 ? (
+            {rewards.length > 0 ? (
               <div className="space-y-4">
-                {userRewards.slice(0, 3).map((userReward: any) => (
+                {rewards.slice(0, 3).map((userReward) => (
                   <div key={userReward.id} className="flex items-center justify-between p-4 bg-background rounded-lg border border-neutral-800">
                     <div>
                       <h3 className="font-semibold text-neutral-200">{userReward.reward.title}</h3>
@@ -198,6 +215,54 @@ const Dashboard = () => {
                 <Link to="/rewards" className="btn btn-accent btn-sm">
                   Browse Rewards
                 </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Recent Activity */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-primary" />
+                Recent Activity
+              </h2>
+            </div>
+
+            {activity.length > 0 ? (
+              <div className="space-y-4">
+                {activity.map((activityItem) => (
+                  <div key={activityItem.id} className="flex items-start space-x-3 p-3 bg-background rounded-lg border border-neutral-800">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      activityItem.activity_type === 'tournament_join' ? 'bg-secondary/20 text-secondary' :
+                      activityItem.activity_type === 'reward_claim' ? 'bg-accent/20 text-accent' :
+                      activityItem.activity_type === 'points_earned' ? 'bg-success/20 text-success' :
+                      'bg-primary/20 text-primary'
+                    }`}>
+                      {activityItem.activity_type === 'tournament_join' ? <Trophy className="h-4 w-4" /> :
+                       activityItem.activity_type === 'reward_claim' ? <Gift className="h-4 w-4" /> :
+                       activityItem.activity_type === 'points_earned' ? <TrendingUp className="h-4 w-4" /> :
+                       <Activity className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-neutral-200">{activityItem.description}</p>
+                      <p className="text-xs text-neutral-500">
+                        {new Date(activityItem.created_at).toLocaleDateString()}
+                      </p>
+                      {activityItem.points_change !== 0 && (
+                        <p className={`text-xs font-semibold ${
+                          activityItem.points_change > 0 ? 'text-success' : 'text-error'
+                        }`}>
+                          {activityItem.points_change > 0 ? '+' : ''}{activityItem.points_change} points
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                <p className="text-neutral-400">No recent activity</p>
               </div>
             )}
           </div>

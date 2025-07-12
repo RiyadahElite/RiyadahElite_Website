@@ -11,28 +11,73 @@ const tournamentRoutes = require('./routes/tournaments');
 const rewardRoutes = require('./routes/rewards');
 const gameRoutes = require('./routes/games');
 
+// Import database
+const { db } = require('./config/database');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(helmet());
+// Security middleware
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 app.use(compression());
 app.use(morgan('combined'));
+
+// CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check route
+// Root route
 app.get('/', (req, res) => {
   res.json({
-    message: 'Riyadah Elite Backend is running',
+    message: 'Riyadh Elite Backend is running',
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      tournaments: '/api/tournaments',
+      rewards: '/api/rewards',
+      games: '/api/games'
+    }
   });
+});
+
+// Health check route
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    await db.testConnection();
+    
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API routes
@@ -46,7 +91,16 @@ app.use('*', (req, res) => {
   res.status(404).json({
     error: 'Route not found',
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
+    availableRoutes: [
+      'GET /',
+      'GET /health',
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'GET /api/auth/profile',
+      'GET /api/tournaments',
+      'GET /api/rewards'
+    ]
   });
 });
 
@@ -59,15 +113,37 @@ app.use((error, req, res, next) => {
   });
 });
 
+// Graceful shutdown handlers
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Riyadah Elite Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/`);
+  console.log(`🚀 Riyadh Elite Backend running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔗 API base URL: http://localhost:${PORT}/api`);
+  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('⚠️  Supabase credentials not found. Using placeholder database functions.');
-    console.warn('   Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env file');
+    console.warn('⚠️  Supabase credentials not found. Please add to .env file:');
+    console.warn('   SUPABASE_URL=your_supabase_project_url');
+    console.warn('   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key');
   }
 });
 

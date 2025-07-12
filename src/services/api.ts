@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
 // Add token to requests if it exists
@@ -33,6 +34,8 @@ api.interceptors.response.use(
       toast.error('Resource not found.');
     } else if (error.response?.status === 500) {
       toast.error('Server error. Please try again later.');
+    } else if (error.code === 'ECONNABORTED') {
+      toast.error('Request timeout. Please try again.');
     } else {
       toast.error('An unexpected error occurred.');
     }
@@ -60,6 +63,11 @@ export const auth = {
     const response = await api.put('/auth/profile', data);
     return response.data;
   },
+
+  getDashboardData: async () => {
+    const response = await api.get('/auth/dashboard');
+    return response.data;
+  },
 };
 
 export const tournaments = {
@@ -75,7 +83,7 @@ export const tournaments = {
 
   create: async (data: { 
     title: string; 
-    game_name: string;
+    game: string;
     description: string; 
     start_date: string;
     end_date: string;

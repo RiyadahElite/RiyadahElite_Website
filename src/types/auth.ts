@@ -1,11 +1,12 @@
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'moderator';
   avatar?: string;
-  points?: number;
+  points: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface AuthState {
@@ -28,7 +29,7 @@ export interface RegisterCredentials {
 export interface Tournament {
   id: string;
   title: string;
-  game_name: string;
+  game: string;
   description?: string;
   start_date: string;
   end_date: string;
@@ -61,4 +62,48 @@ export interface Game {
   image_url?: string;
   submitted_by: string;
   created_at: string;
+}
+
+export interface UserTournament {
+  id: string;
+  user_id: string;
+  tournament_id: string;
+  status: 'registered' | 'active' | 'completed' | 'disqualified';
+  joined_at: string;
+  tournament: Tournament;
+}
+
+export interface UserReward {
+  id: string;
+  user_id: string;
+  reward_id: string;
+  status: 'claimed' | 'shipped' | 'delivered';
+  redeemed_at: string;
+  reward: Reward;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  tournament_id?: string;
+  reward_id?: string;
+  activity_type: 'registration' | 'login' | 'tournament_join' | 'tournament_leave' | 'reward_claim' | 'points_earned' | 'profile_update';
+  description: string;
+  points_change: number;
+  status: string;
+  created_at: string;
+  tournament?: { title: string };
+  reward?: { title: string };
+}
+
+export interface DashboardData {
+  user: User;
+  tournaments: UserTournament[];
+  rewards: UserReward[];
+  activity: UserActivity[];
+  stats: {
+    totalTournaments: number;
+    totalRewards: number;
+    totalPoints: number;
+  };
 }
