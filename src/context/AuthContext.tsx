@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: true,
         isLoading: false,
       });
-      toast.success(`Welcome back, ${user.username}!`);
+      toast.success(`Welcome back, ${user.name}!`);
       navigate('/dashboard');
     } catch (error: any) {
       setState(prev => ({ ...prev, isLoading: false }));
@@ -77,17 +77,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async ({ username, email, password }: RegisterCredentials) => {
+  const register = async ({ name, email, password }: RegisterCredentials) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      const { token, user } = await auth.register(username, email, password);
+      const { token, user } = await auth.register(name, email, password);
       localStorage.setItem('token', token);
       setState({
         user,
         isAuthenticated: true,
         isLoading: false,
       });
-      toast.success(`Welcome to Riyadh Elite, ${user.username}!`);
+      toast.success(`Welcome to Riyadh Elite, ${user.name}!`);
       navigate('/dashboard');
     } catch (error: any) {
       setState(prev => ({ ...prev, isLoading: false }));

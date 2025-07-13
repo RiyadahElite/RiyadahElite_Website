@@ -79,12 +79,21 @@ const Navbar = () => {
                   onClick={toggleDropdown}
                   className="flex items-center space-x-2 text-neutral-300 hover:text-primary px-3 py-2 rounded-md"
                 >
-                  <img 
-                    src={user?.avatar} 
-                    alt={user?.username} 
+                  <div 
                     className="h-8 w-8 rounded-full border-2 border-primary/50"
-                  />
-                  <span className="font-medium">{user?.username}</span>
+                    style={{ 
+                      backgroundColor: '#009DFF20',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      fontWeight: 'bold',
+                      color: '#009DFF'
+                    }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="font-medium">{user?.name}</span>
                   <ChevronDown size={16} />
                 </button>
                 
@@ -191,14 +200,23 @@ const Navbar = () => {
             <>
               <div className="flex items-center px-5">
                 <div className="flex-shrink-0">
-                  <img 
-                    src={user?.avatar} 
-                    alt={user?.username} 
+                  <div 
                     className="h-10 w-10 rounded-full border-2 border-primary/50" 
-                  />
+                    style={{ 
+                      backgroundColor: '#009DFF20',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      color: '#009DFF'
+                    }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-neutral-200">{user?.username}</div>
+                  <div className="text-base font-medium text-neutral-200">{user?.name}</div>
                   <div className="text-sm font-medium text-neutral-400">{user?.email}</div>
                 </div>
               </div>

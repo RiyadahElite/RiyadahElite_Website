@@ -51,16 +51,12 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await register({ username, email, password });
+      await register({ name: username.trim(), email: email.trim(), password });
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Registration error:', error);
-      if (error.response?.data?.error === 'User already exists') {
-        toast.error('Email is already registered');
-      } else {
-        toast.error('Registration failed. Please try again.');
-      }
+      // Error is already handled by the API interceptor
     } finally {
       setIsLoading(false);
     }

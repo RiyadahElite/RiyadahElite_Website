@@ -30,7 +30,7 @@ const authController = {
 
       // Create user
       const userData = {
-        username: username.trim(),
+        name: username.trim(),
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         role: 'user',
@@ -48,7 +48,7 @@ const authController = {
           userId: user.id, 
           email: user.email, 
           role: user.role,
-          username: user.username 
+          name: user.name 
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -99,7 +99,7 @@ const authController = {
           userId: user.id, 
           email: user.email, 
           role: user.role,
-          username: user.username 
+          name: user.name 
         },
         JWT_SECRET,
         { expiresIn: '7d' }
@@ -139,10 +139,10 @@ const authController = {
   // Update user profile
   async updateProfile(req, res) {
     try {
-      const { username, avatar } = req.body;
+      const { name, avatar } = req.body;
       const updates = {};
 
-      if (username) updates.username = username.trim();
+      if (name) updates.name = name.trim();
       if (avatar) updates.avatar = avatar;
 
       const updatedUser = await db.updateUser(req.user.userId, updates);

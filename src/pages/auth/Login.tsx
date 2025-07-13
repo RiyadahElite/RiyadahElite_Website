@@ -38,7 +38,7 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await login({ email, password });
+      await login({ email: email.trim(), password });
 
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
@@ -50,7 +50,7 @@ const Login = () => {
       navigate(from, { replace: true });
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.error || 'Invalid email or password');
+      // Error is already handled by the API interceptor
     } finally {
       setIsLoading(false);
     }

@@ -36,16 +36,18 @@ api.interceptors.response.use(
       toast.error('Server error. Please try again later.');
     } else if (error.code === 'ECONNABORTED') {
       toast.error('Request timeout. Please try again.');
+    } else if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check your connection.');
     } else {
-      toast.error('An unexpected error occurred.');
+      console.error('API Error:', error);
     }
     return Promise.reject(error);
   }
 );
 
 export const auth = {
-  register: async (username: string, email: string, password: string) => {
-    const response = await api.post('/auth/register', { username, email, password });
+  register: async (name: string, email: string, password: string) => {
+    const response = await api.post('/auth/register', { username: name, email, password });
     return response.data;
   },
 
@@ -59,7 +61,7 @@ export const auth = {
     return response.data;
   },
 
-  updateProfile: async (data: { username?: string; avatar?: string }) => {
+  updateProfile: async (data: { name?: string; avatar?: string }) => {
     const response = await api.put('/auth/profile', data);
     return response.data;
   },

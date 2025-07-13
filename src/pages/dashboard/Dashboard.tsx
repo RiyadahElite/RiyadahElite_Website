@@ -24,6 +24,18 @@ const Dashboard = () => {
       setDashboardData(data);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // Set default data structure if API fails
+      setDashboardData({
+        user: user!,
+        tournaments: [],
+        rewards: [],
+        activity: [],
+        stats: {
+          totalTournaments: 0,
+          totalRewards: 0,
+          totalPoints: user?.points || 0
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -58,7 +70,7 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome back, <span className="gradient-text">{user?.username}</span>
+            Welcome back, <span className="gradient-text">{user?.name}</span>
           </h1>
           <p className="text-neutral-400">
             Here's what's happening in your gaming journey
@@ -191,7 +203,7 @@ const Dashboard = () => {
                       <h3 className="font-semibold text-neutral-200">{userReward.reward.title}</h3>
                       <p className="text-sm text-neutral-400">{userReward.reward.category}</p>
                       <p className="text-xs text-neutral-500">
-                        Claimed: {new Date(userReward.redeemed_at).toLocaleDateString()}
+                        Claimed: {new Date(userReward.claimed_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">

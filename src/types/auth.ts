@@ -1,6 +1,6 @@
 export interface User {
   id: string;
-  username: string;
+  name: string;
   email: string;
   role: 'user' | 'admin' | 'moderator';
   avatar?: string;
@@ -21,7 +21,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-  username: string;
+  name: string;
   email: string;
   password: string;
 }
@@ -44,7 +44,7 @@ export interface Reward {
   id: string;
   title: string;
   description?: string;
-  points_required: number;
+  points: number;
   category: string;
   image_url?: string;
   stock: number;
@@ -78,7 +78,7 @@ export interface UserReward {
   user_id: string;
   reward_id: string;
   status: 'claimed' | 'shipped' | 'delivered';
-  redeemed_at: string;
+  claimed_at: string;
   reward: Reward;
 }
 

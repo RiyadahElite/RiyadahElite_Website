@@ -64,7 +64,6 @@ app.get('/', (req, res) => {
 // Health check route
 app.get('/health', async (req, res) => {
   try {
-    // Test database connection (non-blocking)
     let dbStatus = 'disconnected';
     try {
       await db.testConnection();
@@ -149,10 +148,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 API base URL: http://localhost:${PORT}/api`);
   console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
   
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('⚠️  Supabase credentials not found. Please add to .env file:');
-    console.warn('   SUPABASE_URL=your_supabase_project_url');
-    console.warn('   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key');
+  if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://your-project.supabase.co') {
+    console.warn('⚠️  Supabase credentials not configured. Using mock mode.');
+    console.warn('   To enable full functionality, update .env with your Supabase credentials');
   }
 });
 
